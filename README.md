@@ -91,6 +91,101 @@ python examples/example.py
 python examples/run_demo.py --mode interactive
 ```
 
+## 训练与评估全流程
+
+### 1. 数据准备
+
+#### 下载数据集
+
+```bash
+# 下载GSM8K数据集
+python scripts/download_datasets.py --dataset gsm8k --output_dir data
+
+# 下载MMLU数据集
+python scripts/download_datasets.py --dataset mmlu --output_dir data
+
+# 下载MATH数据集
+python scripts/download_datasets.py --dataset math --output_dir data
+
+# 下载所有数据集
+python scripts/download_datasets.py --dataset all --output_dir data
+```
+
+#### 处理数据集（注入隐私信息）
+
+```bash
+# 处理GSM8K数据集
+python scripts/prepare_data.py --input_file data/gsm8k/train.json --output_dir data --privacy_ratio 0.5 --train_ratio 0.8
+```
+
+这将生成以下文件：
+- `data/train_data.json`：训练数据
+- `data/test_data.json`：测试数据
+- `data/privacy_tokens.json`：隐私令牌列表
+
+### 2. 模型训练
+
+#### 基本训练（仅使用本地模型）
+
+```bash
+python scripts/train.py --local_model gemma:2b --train_data data/train_data.json --output_dir models --num_epochs 5
+```
+
+#### 高级训练（使用本地模型和服务器模型）
+
+```bash
+python scripts/train.py --local_model gemma:2b --server_model gemma:7b --train_data data/train_data.json --output_dir models --num_epochs 5 --batch_size 32 --learning_rate 5e-5
+```
+
+训练结果会保存到`models`目录，包括：
+- `models/p3defer_epoch_1.pt`
+- `models/p3defer_epoch_2.pt`
+- ...
+- `models/p3defer_final.pt`
+
+### 3. 模型评估
+
+```bash
+python scripts/evaluate.py --local_model gemma:2b --test_data data/test_data.json --model_path models/p3defer_final.pt --output_file results/evaluation_results.json
+```
+
+如果使用服务器模型：
+
+```bash
+python scripts/evaluate.py --local_model gemma:2b --server_model gemma:7b --test_data data/test_data.json --model_path models/p3defer_final.pt --output_file results/evaluation_results.json
+```
+
+### 4. 结果分析
+
+```bash
+python scripts/analyze_results.py --results_file results/evaluation_results.json --output_dir results
+```
+
+这会生成各种图表和分析结果，包括：
+- 隐私保护效果分析
+- 回答质量分析
+- 决策分布分析
+- 效率分析
+
+### 5. 完整流程示例
+
+```bash
+# 1. 下载数据集
+python scripts/download_datasets.py --dataset gsm8k --output_dir data
+
+# 2. 处理数据集
+python scripts/prepare_data.py --input_file data/gsm8k/train.json --output_dir data
+
+# 3. 训练模型
+python scripts/train.py --local_model gemma:2b --train_data data/train_data.json --output_dir models --num_epochs 5
+
+# 4. 评估模型
+python scripts/evaluate.py --local_model gemma:2b --test_data data/test_data.json --model_path models/p3defer_final.pt --output_file results/evaluation_results.json
+
+# 5. 分析结果
+python scripts/analyze_results.py --results_file results/evaluation_results.json --output_dir results
+```
+
 ## 使用方法
 
 ```python
