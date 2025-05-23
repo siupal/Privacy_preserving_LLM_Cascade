@@ -1,8 +1,20 @@
+# P³Defer框架依赖
+
+# 核心依赖
 torch>=2.0.0
 transformers>=4.30.0
 numpy>=1.24.0
-tqdm>=4.65.0
-nltk>=3.8.1
 requests>=2.31.0
-rouge-score>=0.1.2
+
+# NLP处理
 python-Levenshtein>=0.21.0
+nltk>=3.8.1
+rouge-score>=0.1.2
+
+# 训练与评估
+tqdm>=4.65.0
+matplotlib>=3.7.0
+pandas>=2.0.0
+
+# 可选依赖
+jupyter>=1.0.0  # 用于运行笔记本
