@@ -51,3 +51,6 @@ data/mmlu/mmlu.zip
 data/math/extract/math-main/data_file_lists/with_steps_flist_relative_linear_algebra.txt
 data/mmlu/extract/test-master/test_calibration.py
 data/*
+data/privacy_tokens.json
+*.pyc
+data/privacy_tokens.json

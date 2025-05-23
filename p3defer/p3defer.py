@@ -13,9 +13,9 @@ from transformers import AutoTokenizer
 from rouge_score import rouge_scorer
 
 # 导入自定义模块
-from models.ollama_client import OllamaClient
-from models.private_memory import PrivateMemory
-from models.policy_network import PPOAgent
+from .models.ollama_client import OllamaClient
+from .models.private_memory import PrivateMemory
+from .models.policy_network import PPOAgent
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -48,7 +48,7 @@ class P3Defer:
                  local_model_name="gemma:2b",
                  server_model_name=None,
                  privacy_memory=None,
-                 state_dim=768,
+                 state_dim=96,
                  action_dim=3,
                  device="cuda" if torch.cuda.is_available() else "cpu"):
         """初始化P³Defer框架
@@ -70,9 +70,15 @@ class P3Defer:
         
         # 初始化服务器模型（如果提供）
         self.server_model = None
-        if server_model_name:
-            self.server_model = OllamaClient(model_name=server_model_name)
-            logger.info(f"初始化服务器模型: {server_model_name}")
+        self.server_model_name = server_model_name
+        
+        if server_model_name and server_model_name.lower() != 'none':
+            try:
+                self.server_model = OllamaClient(model_name=server_model_name)
+                logger.info(f"初始化服务器模型: {server_model_name}")
+            except Exception as e:
+                logger.error(f"初始化服务器模型失败: {e}")
+                self.server_model = None
         
         # 初始化tokenizer（用于状态编码）
         try:
@@ -233,23 +239,40 @@ class P3Defer:
         elif action == 1:  # 直接转发到服务器
             logger.info("动作: 直接转发到服务器")
             if self.server_model is None:
-                logger.warning("服务器模型未配置，回退到本地输出")
+                logger.warning("服务器模型未配置或不可用，回退到本地输出")
                 final_output = local_output
+                # 在训练模式下，如果服务器模型不可用，则使用本地模型模拟服务器模型
+                if train_mode and self.server_model_name and self.server_model_name.lower() != 'none':
+                    logger.info("训练模式: 使用本地模型模拟服务器模型")
             else:
-                # 使用服务器模型生成输出
-                final_output = self.server_model.generate(prompt)
+                try:
+                    # 使用服务器模型生成输出
+                    final_output = self.server_model.generate(prompt)
+                except Exception as e:
+                    logger.error(f"服务器模型生成失败: {e}")
+                    final_output = local_output
         else:  # 掩码后转发到服务器
             logger.info("动作: 掩码后转发到服务器")
             masked_query = self.privacy_memory.mask_privacy(query)
             logger.info(f"掩码后的查询: {masked_query}")
             
             if self.server_model is None:
-                logger.warning("服务器模型未配置，回退到本地输出")
+                logger.warning("服务器模型未配置或不可用，回退到本地输出")
                 final_output = local_output
+                # 在训练模式下，如果服务器模型不可用，则使用本地模型模拟服务器模型
+                if train_mode and self.server_model_name and self.server_model_name.lower() != 'none':
+                    logger.info("训练模式: 使用本地模型模拟服务器模型")
+                    # 对掩码后的查询再次使用本地模型
+                    masked_prompt = instruction_prompt.format(question=masked_query)
+                    final_output = self.local_model.generate(masked_prompt)
             else:
-                # 使用服务器模型生成输出
-                masked_prompt = instruction_prompt.format(question=masked_query)
-                final_output = self.server_model.generate(masked_prompt)
+                try:
+                    # 使用服务器模型生成输出
+                    masked_prompt = instruction_prompt.format(question=masked_query)
+                    final_output = self.server_model.generate(masked_prompt)
+                except Exception as e:
+                    logger.error(f"服务器模型生成失败: {e}")
+                    final_output = local_output
         
         # 如果处于训练模式，计算奖励并存储经验
         if train_mode:

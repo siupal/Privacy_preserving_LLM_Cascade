@@ -15,8 +15,8 @@ from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入P³Defer框架
-from code.p3defer import P3Defer
-from code.models.private_memory import PrivateMemory
+from p3defer import P3Defer
+from p3defer.models.private_memory import PrivateMemory
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -28,8 +28,8 @@ def parse_args():
                         help='计算设备: cuda 或 cpu')
     parser.add_argument('--local_model', type=str, default='gemma:2b',
                         help='本地模型名称')
-    parser.add_argument('--server_model', type=str, default=None,
-                        help='服务器模型名称 (可选)')
+    parser.add_argument('--server_model', type=str, default='none',
+                        help='服务器模型名称，设置为"none"表示不使用服务器模型')
     parser.add_argument('--train_data', type=str, required=True,
                         help='训练数据文件路径 (JSON格式)')
     parser.add_argument('--output_dir', type=str, default='./models',

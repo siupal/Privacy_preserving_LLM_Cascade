@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class PolicyNetwork(nn.Module):
     """策略网络，用于决策延迟动作"""
     
-    def __init__(self, input_dim=768, hidden_dim=256, output_dim=3):
+    def __init__(self, input_dim=96, hidden_dim=64, output_dim=3):
         """初始化策略网络
         
         Args:
@@ -48,7 +48,7 @@ class PolicyNetwork(nn.Module):
 class ValueNetwork(nn.Module):
     """价值网络，用于评估状态价值"""
     
-    def __init__(self, input_dim=768, hidden_dim=256):
+    def __init__(self, input_dim=96, hidden_dim=64):
         """初始化价值网络
         
         Args:
